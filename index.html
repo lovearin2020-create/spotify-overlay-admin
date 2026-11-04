@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Spotify Overlay 관리자</title>
+<title>LyricOverlay 관리자</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
 <style>
@@ -88,7 +88,7 @@ pre { white-space: pre-wrap; word-break: break-all; background: #0b0b0b; border:
 <body>
 <header>
 	<div class="logo">♪</div>
-	<h1>Spotify Overlay 관리자</h1>
+	<h1>LyricOverlay 관리자</h1>
 	<span id="who"></span>
 	<button id="logout" class="btn small" hidden>로그아웃</button>
 </header>
@@ -393,7 +393,7 @@ $('ea-toggle').addEventListener('click', async () => {
 const mkPlan = chips('mk-plan');
 const mkDays = chips('mk-days', (v) => { $('mk-days-custom').hidden = v !== 'custom'; });
 function kakaoText(c) {
-	return `[Spotify Overlay] ${PLAN_NAME[c.plan]} ${daysLabel(c.days)} 프로모션 키\n${c.code}\n\n프로그램 설정 창의 "프로모션 키" 칸에 넣고 "키 사용"을 누르면 바로 적용됩니다.` +
+	return `[LyricOverlay] ${PLAN_NAME[c.plan]} ${daysLabel(c.days)} 프로모션 키\n${c.code}\n\n프로그램 설정 창의 "프로모션 키" 칸에 넣고 "키 사용"을 누르면 바로 적용됩니다.` +
 		(c.expires_at ? `\n(${when(c.expires_at).split(' ')[0]}까지 사용할 수 있습니다)` : '');
 }
 $('mk-go').addEventListener('click', async () => {
