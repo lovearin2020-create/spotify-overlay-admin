@@ -124,6 +124,14 @@ pre { white-space: pre-wrap; word-break: break-all; background: #0b0b0b; border:
 				<div class="stats" id="stats"></div>
 				<div class="row"><button class="btn small" data-reload="home">새로 고침</button></div>
 			</div>
+			<div class="card">
+				<h2>새 기능 Max 선공개</h2>
+				<p class="hint" style="margin:-4px 0 0">곡이 바뀔 때만 잠깐, 번역 줄, 이 곡만 싱크, 단어 단위 가사, 방송용 화면(OBS) 다섯 가지입니다. 선공개 중에는 Max 에서만 켜지고, 모두에게 공개하면 30분 안에 각 요금제에 맞게 열립니다.</p>
+				<div class="row">
+					<b id="ea-state" class="grow">확인하고 있습니다.</b>
+					<button id="ea-toggle" class="btn primary" disabled>모두에게 공개</button>
+				</div>
+			</div>
 		</section>
 
 		<!-- 키 만들기 -->
@@ -356,7 +364,30 @@ loaders.home = async () => {
 		$('stats').innerHTML = items.map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
 		$('fb-badge').hidden = !s.open_feedback; $('fb-badge').textContent = s.open_feedback;
 	} catch (e) { $('stats').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+	loadEarly();
 };
+
+// ───────── 새 기능 Max 선공개 ─────────
+let earlyPublic = null;
+async function loadEarly() {
+	try {
+		earlyPublic = await rpc('early_features_public');
+		$('ea-state').textContent = earlyPublic ? '지금 모두에게 공개되어 있습니다.' : '지금 Max 에서만 쓸 수 있습니다. (선공개 중)';
+		$('ea-toggle').textContent = earlyPublic ? '다시 Max 전용으로' : '모두에게 공개';
+		$('ea-toggle').className = 'btn ' + (earlyPublic ? '' : 'primary');
+		$('ea-toggle').disabled = false;
+	} catch (e) {
+		$('ea-state').textContent = /함수가 없습니다/.test(e.message) ? '서버에 4-schema.sql 을 먼저 실행해 주세요.' : e.message;
+	}
+}
+$('ea-toggle').addEventListener('click', async () => {
+	const next = !earlyPublic;
+	if (!confirm(next ? '새 기능을 모든 요금제에 공개할까요? (Free 는 잠깐 뜨는 카드만, Pro 는 Max 전용 기능을 뺀 나머지)' : '새 기능을 다시 Max 전용으로 바꿀까요?')) return;
+	$('ea-toggle').disabled = true;
+	try { await rpc('admin_set_early_public', { p_public: next }); toast(next ? '모두에게 공개했습니다' : 'Max 전용으로 바꿨습니다'); }
+	catch (e) { toast(e.message); }
+	loadEarly();
+});
 
 // ───────── 키 만들기 ─────────
 const mkPlan = chips('mk-plan');
