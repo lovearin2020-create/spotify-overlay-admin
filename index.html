@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Spotify Overlay 관리자</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+:root {
+	--bg: #101010; --card: #1a1a1a; --card2: #212121; --line: #2c2c2c; --text: #f2f2f2; --muted: #9c9c9c;
+	--green: #1db954; --red: #ff6b6b; --gold: #f5c84b; --blue: #6aa8ff;
+	color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif; font-size: 15px;
+	-webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+header {
+	position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+	padding: calc(12px + env(safe-area-inset-top)) 16px 12px; background: rgba(16,16,16,.94);
+	border-bottom: 1px solid var(--line); backdrop-filter: blur(10px);
+}
+.logo { width: 34px; height: 34px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-weight: 800; }
+h1 { margin: 0; font-size: 17px; font-weight: 800; flex: 1; }
+#who { color: var(--muted); font-size: 13px; }
+nav { display: flex; gap: 6px; padding: 10px 16px; overflow-x: auto; border-bottom: 1px solid var(--line); -webkit-overflow-scrolling: touch; }
+nav button {
+	flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+	padding: 8px 15px; font-weight: 700; font-size: 14px; cursor: pointer;
+}
+nav button.on { background: var(--green); border-color: var(--green); color: #fff; }
+nav .badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; line-height: 18px; }
+main { max-width: 980px; margin: 0 auto; padding: 16px 16px calc(40px + env(safe-area-inset-bottom)); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+h2 { margin: 0 0 12px; font-size: 16px; font-weight: 800; }
+.hint { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 8px 0 0; }
+.msg { min-height: 18px; font-size: 13.5px; margin: 10px 0 0; }
+.msg.ok { color: var(--green); } .msg.err { color: var(--red); }
+label.f { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+input, select, textarea {
+	background: #0c0c0c; border: 1px solid #333; border-radius: 10px; padding: 11px 12px; outline: none; width: 100%; font-size: 15px;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--green); }
+textarea { min-height: 70px; resize: vertical; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.btn {
+	border: 1px solid #3a3a3a; background: #2a2a2a; border-radius: 999px; padding: 10px 18px; font-weight: 700; cursor: pointer; font-size: 14px;
+}
+.btn.primary { background: var(--green); border-color: var(--green); color: #fff; }
+.btn.danger { border-color: #5a2a2a; color: var(--red); background: #241616; }
+.btn.small { padding: 6px 12px; font-size: 12.5px; }
+.btn:disabled { opacity: .5; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid #3a3a3a; background: #1f1f1f; border-radius: 999px; padding: 7px 13px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.chip.on { border-color: var(--green); background: #173d26; color: #c8f5d8; }
+.plan { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.plan.free { background: #333; color: #ddd; } .plan.pro { background: var(--green); color: #fff; }
+.plan.max { background: linear-gradient(90deg, #f5c84b, #ff8a3d); color: #1a1205; }
+.stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.stat { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.stat b { display: block; font-size: 26px; font-weight: 800; }
+.stat span { color: var(--muted); font-size: 13px; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item { background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.item .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.item .meta { color: var(--muted); font-size: 12.5px; margin-top: 4px; line-height: 1.6; word-break: break-all; }
+.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; font-weight: 700; letter-spacing: .04em; }
+.grow { flex: 1; min-width: 0; }
+.used { opacity: .55; }
+pre { white-space: pre-wrap; word-break: break-all; background: #0b0b0b; border: 1px solid #2a2a2a; border-radius: 10px; padding: 10px; font-size: 11.5px; max-height: 300px; overflow: auto; }
+.newcodes .item { border-color: #2c5a3a; background: #132a1c; }
+#login { max-width: 420px; margin: 40px auto; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #2a2a2a; border: 1px solid #3a3a3a; padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+.toast.show { opacity: 1; }
+.kind { font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: #333; }
+.kind.bug { background: #4a1e1e; color: #ffb1b1; } .kind.idea { background: #1d3150; color: #b8d4ff; }
+.progress { height: 6px; background: #2a2a2a; border-radius: 3px; overflow: hidden; margin-top: 10px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--green); transition: width .2s; }
+</style>
+</head>
+<body>
+<header>
+	<div class="logo">♪</div>
+	<h1>Spotify Overlay 관리자</h1>
+	<span id="who"></span>
+	<button id="logout" class="btn small" hidden>로그아웃</button>
+</header>
+
+<!-- 로그인 -->
+<main id="login">
+	<div class="card">
+		<h2>관리자 로그인</h2>
+		<p class="hint" style="margin:-4px 0 14px">프로그램에 가입한 관리자 이메일과 비밀번호로 로그인합니다.</p>
+		<form id="login-form" class="list">
+			<label class="f">이메일<input id="l-email" type="email" autocomplete="email" required></label>
+			<label class="f">비밀번호<input id="l-pw" type="password" autocomplete="current-password" required></label>
+			<button class="btn primary" type="submit">로그인</button>
+		</form>
+		<p id="l-msg" class="msg"></p>
+	</div>
+</main>
+
+<div id="app" hidden>
+	<nav id="tabs">
+		<button data-tab="home" class="on">요약</button>
+		<button data-tab="make">키 만들기</button>
+		<button data-tab="codes">키 목록</button>
+		<button data-tab="users">가입자</button>
+		<button data-tab="feedback">피드백<span id="fb-badge" class="badge" hidden></span></button>
+		<button data-tab="releases">업데이트</button>
+	</nav>
+	<main>
+		<!-- 요약 -->
+		<section data-view="home">
+			<div class="card">
+				<h2>요약</h2>
+				<div class="stats" id="stats"></div>
+				<div class="row"><button class="btn small" data-reload="home">새로 고침</button></div>
+			</div>
+		</section>
+
+		<!-- 키 만들기 -->
+		<section data-view="make" hidden>
+			<div class="card">
+				<h2>프로모션 키 만들기</h2>
+				<div class="list">
+					<div>
+						<div class="hint" style="margin:0 0 6px">요금제</div>
+						<div class="chips" id="mk-plan">
+							<button class="chip on" data-v="pro">Pro</button>
+							<button class="chip" data-v="max">Max</button>
+						</div>
+					</div>
+					<div>
+						<div class="hint" style="margin:0 0 6px">기간</div>
+						<div class="chips" id="mk-days">
+							<button class="chip" data-v="7">7일 체험</button>
+							<button class="chip on" data-v="30">1개월</button>
+							<button class="chip" data-v="90">3개월</button>
+							<button class="chip" data-v="365">1년</button>
+							<button class="chip" data-v="custom">직접 입력</button>
+						</div>
+						<input id="mk-days-custom" type="number" min="1" max="3650" placeholder="일 수" style="margin-top:8px" hidden>
+					</div>
+					<div class="grid">
+						<label class="f">만들 개수<input id="mk-count" type="number" min="1" max="100" value="1"></label>
+						<label class="f">키 하나를 쓸 수 있는 사람 수<input id="mk-uses" type="number" min="1" max="10000" value="1"></label>
+						<label class="f">키 사용 마감 (며칠 안에, 비우면 없음)<input id="mk-valid" type="number" min="1" max="3650" placeholder="예: 14"></label>
+					</div>
+					<label class="f">메모 (누구에게 주는지)<input id="mk-note" type="text" placeholder="예: 홍길동 카톡 결제 11/4"></label>
+				</div>
+				<div class="row"><button id="mk-go" class="btn primary">키 만들기</button></div>
+				<p id="mk-msg" class="msg"></p>
+				<div id="mk-out" class="list newcodes" style="margin-top:12px"></div>
+			</div>
+		</section>
+
+		<!-- 키 목록 -->
+		<section data-view="codes" hidden>
+			<div class="card">
+				<h2>키 목록</h2>
+				<div class="row" style="margin-top:0">
+					<input id="cd-search" type="search" placeholder="키나 메모, 사용한 이메일로 찾기" class="grow">
+					<button class="btn small" data-reload="codes">새로 고침</button>
+				</div>
+				<div id="codes" class="list" style="margin-top:12px"></div>
+			</div>
+		</section>
+
+		<!-- 가입자 -->
+		<section data-view="users" hidden>
+			<div class="card">
+				<h2>가입자</h2>
+				<div class="row" style="margin-top:0">
+					<input id="us-search" type="search" placeholder="이메일로 찾기" class="grow">
+					<button id="us-go" class="btn small">찾기</button>
+				</div>
+				<div id="users" class="list" style="margin-top:12px"></div>
+			</div>
+		</section>
+
+		<!-- 피드백 -->
+		<section data-view="feedback" hidden>
+			<div class="card">
+				<h2>피드백</h2>
+				<div class="row" style="margin-top:0">
+					<div class="chips" id="fb-filter">
+						<button class="chip on" data-v="open">안 본 것</button>
+						<button class="chip" data-v="all">전체</button>
+					</div>
+					<button class="btn small" data-reload="feedback">새로 고침</button>
+				</div>
+				<div id="feedback" class="list" style="margin-top:12px"></div>
+			</div>
+		</section>
+
+		<!-- 업데이트 -->
+		<section data-view="releases" hidden>
+			<div class="card">
+				<h2>새 버전 올리기</h2>
+				<p class="hint" style="margin:-4px 0 12px">프로그램 파일(app.asar)을 올리면 사용자가 설정 창에서 "업데이트" 버튼 하나로 받습니다. Max 먼저 공개를 고르면 Max 사용자에게만 먼저 알림이 갑니다.</p>
+				<div class="list">
+					<div class="grid">
+						<label class="f">버전<input id="rl-version" type="text" placeholder="예: 2.1.0" inputmode="decimal"></label>
+						<label class="f">공개 범위
+							<select id="rl-channel">
+								<option value="early">Max 먼저 공개 (얼리 액세스)</option>
+								<option value="stable">모두에게 공개</option>
+							</select>
+						</label>
+					</div>
+					<label class="f">바뀐 점 (설정 창 알림에 나옵니다)<textarea id="rl-notes" placeholder="예: 곡이 바뀔 때만 잠깐 뜨는 카드가 생겼습니다."></textarea></label>
+					<div>
+						<div class="hint" style="margin:0 0 6px">올리는 방법</div>
+						<div class="chips" id="rl-mode">
+							<button class="chip on" data-v="asar">app.asar 파일 올리기 (추천)</button>
+							<button class="chip" data-v="link">다운로드 링크만</button>
+						</div>
+					</div>
+					<label class="f" id="rl-file-wrap">app.asar 파일<input id="rl-file" type="file"></label>
+					<label class="f" id="rl-url-wrap" hidden>다운로드 링크 (https 로 시작)<input id="rl-url" type="url" placeholder="https://..."></label>
+				</div>
+				<div class="progress" id="rl-prog" hidden><i></i></div>
+				<div class="row"><button id="rl-go" class="btn primary">올리기</button></div>
+				<p id="rl-msg" class="msg"></p>
+			</div>
+			<div class="card">
+				<h2>올린 버전</h2>
+				<div id="releases" class="list"></div>
+			</div>
+		</section>
+	</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const SB_URL = 'https://vqeiyxnabppvqerlozeh.supabase.co';
+const SB_KEY = 'sb_publishable_60JtTJuoS6CMu0W6FTickQ_P0ivqRCL';
+const PLAN_NAME = { free: 'Free', pro: 'Pro', max: 'Max' };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const when = (iso) => {
+	if (!iso) return '';
+	const d = new Date(iso);
+	return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+const daysLabel = (n) => n % 365 === 0 ? `${n / 365}년` : n % 30 === 0 ? `${n / 30}개월` : `${n}일`;
+
+let toastT;
+function toast(t) {
+	const el = $('toast'); el.textContent = t; el.classList.add('show');
+	clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 1600);
+}
+async function copy(t) {
+	try { await navigator.clipboard.writeText(t); toast('복사했습니다'); }
+	catch (_) {
+		const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+		document.execCommand('copy'); ta.remove(); toast('복사했습니다');
+	}
+}
+function msg(id, text, ok) { const m = $(id); m.textContent = text || ''; m.className = 'msg' + (text ? (ok ? ' ok' : ' err') : ''); }
+
+// ───────── 로그인 ─────────
+let session = null;
+try { session = JSON.parse(localStorage.getItem('spov-admin') || 'null'); } catch (_) { session = null; }
+function saveSession() { try { localStorage.setItem('spov-admin', JSON.stringify(session)); } catch (_) { /* 저장 안 됨 */ } }
+
+async function authReq(path, body) {
+	const r = await fetch(SB_URL + path, { method: 'POST', headers: { apikey: SB_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+	return { status: r.status, json: await r.json().catch(() => null) };
+}
+function setSession(j) {
+	session = { access: j.access_token, refresh: j.refresh_token, expiresAt: Date.now() + (j.expires_in || 3600) * 1000, email: j.user && j.user.email };
+	saveSession();
+}
+async function token() {
+	if (!session) return null;
+	if (Date.now() < session.expiresAt - 60000) return session.access;
+	const r = await authReq('/auth/v1/token?grant_type=refresh_token', { refresh_token: session.refresh });
+	if (r.status === 200 && r.json && r.json.access_token) { setSession(r.json); return session.access; }
+	logout(); return null;
+}
+async function rpc(name, args = {}) {
+	const t = await token();
+	if (!t) throw new Error('로그인이 만료되었습니다.');
+	const r = await fetch(`${SB_URL}/rest/v1/rpc/${name}`, {
+		method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
+	});
+	const j = await r.json().catch(() => null);
+	if (r.status !== 200) {
+		const m = (j && (j.message || j.msg)) || `HTTP ${r.status}`;
+		throw new Error(m === 'not_admin' ? '관리자 계정이 아닙니다.' : /Could not find the function/.test(m) ? '서버에 관리자 함수가 없습니다. schema-2.sql 을 먼저 실행해 주세요.' : m);
+	}
+	return j;
+}
+
+$('login-form').addEventListener('submit', async (e) => {
+	e.preventDefault();
+	msg('l-msg', '로그인하고 있습니다.', true);
+	const r = await authReq('/auth/v1/token?grant_type=password', { email: $('l-email').value.trim(), password: $('l-pw').value });
+	if (r.status !== 200 || !r.json || !r.json.access_token) { msg('l-msg', '이메일 또는 비밀번호가 맞지 않습니다.'); return; }
+	setSession(r.json);
+	enter();
+});
+function logout() {
+	session = null; saveSession();
+	$('app').hidden = true; $('login').hidden = false; $('logout').hidden = true; $('who').textContent = '';
+}
+$('logout').addEventListener('click', logout);
+
+async function enter() {
+	try {
+		const ok = await rpc('is_admin');
+		if (!ok) { msg('l-msg', '관리자 계정이 아닙니다. 관리자 이메일로 로그인해 주세요.'); logout(); return; }
+	} catch (e) { msg('l-msg', e.message); if (!session) return; }
+	$('login').hidden = true; $('app').hidden = false; $('logout').hidden = false;
+	$('who').textContent = session.email || '';
+	show('home');
+}
+
+// ───────── 탭 ─────────
+const loaders = {};
+function show(tab) {
+	for (const b of document.querySelectorAll('#tabs button')) b.classList.toggle('on', b.dataset.tab === tab);
+	for (const v of document.querySelectorAll('[data-view]')) v.hidden = v.dataset.view !== tab;
+	if (loaders[tab]) loaders[tab]();
+}
+for (const b of document.querySelectorAll('#tabs button')) b.addEventListener('click', () => show(b.dataset.tab));
+for (const b of document.querySelectorAll('[data-reload]')) b.addEventListener('click', () => loaders[b.dataset.reload]());
+function chips(id, onChange) {
+	const box = $(id);
+	box.addEventListener('click', (e) => {
+		const c = e.target.closest('.chip'); if (!c) return;
+		for (const x of box.children) x.classList.toggle('on', x === c);
+		if (onChange) onChange(c.dataset.v);
+	});
+	return () => box.querySelector('.chip.on').dataset.v;
+}
+
+// ───────── 요약 ─────────
+loaders.home = async () => {
+	try {
+		const s = await rpc('admin_stats');
+		const items = [
+			['가입자', s.users], ['Pro 사용 중', s.pro], ['Max 사용 중', s.max], ['최근 7일 가입', s.new_7d],
+			['지금 켜져 있는 계정', s.active_now], ['안 본 피드백', s.open_feedback], ['안 쓴 키', s.unused_codes],
+		];
+		$('stats').innerHTML = items.map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('');
+		$('fb-badge').hidden = !s.open_feedback; $('fb-badge').textContent = s.open_feedback;
+	} catch (e) { $('stats').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+};
+
+// ───────── 키 만들기 ─────────
+const mkPlan = chips('mk-plan');
+const mkDays = chips('mk-days', (v) => { $('mk-days-custom').hidden = v !== 'custom'; });
+function kakaoText(c) {
+	return `[Spotify Overlay] ${PLAN_NAME[c.plan]} ${daysLabel(c.days)} 프로모션 키\n${c.code}\n\n프로그램 설정 창의 "프로모션 키" 칸에 넣고 "키 사용"을 누르면 바로 적용됩니다.` +
+		(c.expires_at ? `\n(${when(c.expires_at).split(' ')[0]}까지 사용할 수 있습니다)` : '');
+}
+$('mk-go').addEventListener('click', async () => {
+	const dv = mkDays();
+	const days = dv === 'custom' ? Number($('mk-days-custom').value) : Number(dv);
+	if (!days || days < 1) { msg('mk-msg', '기간을 입력해 주세요.'); return; }
+	const valid = Number($('mk-valid').value) || null;
+	$('mk-go').disabled = true;
+	try {
+		const list = await rpc('admin_create_codes', {
+			p_plan: mkPlan(), p_days: days, p_count: Math.max(1, Math.min(100, Number($('mk-count').value) || 1)),
+			p_max_uses: Math.max(1, Number($('mk-uses').value) || 1), p_note: $('mk-note').value.trim() || null, p_valid_days: valid,
+		});
+		msg('mk-msg', `키 ${list.length}개를 만들었습니다. 카톡용 문구를 복사해서 보내 주세요.`, true);
+		$('mk-out').innerHTML = list.map((c, i) => `
+			<div class="item"><div class="top">
+				<span class="code grow">${esc(c.code)}</span>
+				<button class="btn small" data-copy="${i}">키 복사</button>
+				<button class="btn small primary" data-kakao="${i}">카톡용 문구 복사</button>
+			</div><div class="meta">${PLAN_NAME[c.plan]} ${daysLabel(c.days)}, ${c.max_uses}명까지${c.expires_at ? `, ${when(c.expires_at)}까지 사용 가능` : ''}</div></div>`).join('') +
+			(list.length > 1 ? `<div class="row"><button class="btn small" id="mk-copy-all">키 전부 복사</button></div>` : '');
+		$('mk-out').onclick = (e) => {
+			const a = e.target.closest('[data-copy]'), k = e.target.closest('[data-kakao]');
+			if (a) copy(list[+a.dataset.copy].code);
+			if (k) copy(kakaoText(list[+k.dataset.kakao]));
+			if (e.target.id === 'mk-copy-all') copy(list.map((c) => c.code).join('\n'));
+		};
+	} catch (e) { msg('mk-msg', e.message); }
+	$('mk-go').disabled = false;
+});
+
+// ───────── 키 목록 ─────────
+let codes = [];
+function renderCodes() {
+	const q = $('cd-search').value.trim().toLowerCase();
+	const list = codes.filter((c) => !q || [c.code, c.note, c.used_by].some((x) => String(x || '').toLowerCase().includes(q)));
+	$('codes').innerHTML = list.length ? list.map((c) => {
+		const usedUp = c.used_count >= c.max_uses, expired = c.expires_at && new Date(c.expires_at) < new Date();
+		return `<div class="item ${usedUp || expired ? 'used' : ''}"><div class="top">
+			<span class="plan ${c.plan}">${PLAN_NAME[c.plan]}</span>
+			<span class="code grow">${esc(c.code)}</span>
+			<button class="btn small" data-copy="${esc(c.code)}">복사</button>
+			<button class="btn small danger" data-del="${esc(c.code)}">삭제</button>
+		</div><div class="meta">${daysLabel(c.days)}, ${c.used_count}/${c.max_uses}명 사용${expired ? ', 기한 지남' : c.expires_at ? `, ${when(c.expires_at)}까지` : ''}
+			${c.note ? `<br>메모: ${esc(c.note)}` : ''}${c.used_by ? `<br>사용: ${esc(c.used_by)}` : ''}<br>만든 날: ${when(c.created_at)}</div></div>`;
+	}).join('') : '<p class="hint">키가 없습니다.</p>';
+}
+$('codes').addEventListener('click', async (e) => {
+	const c = e.target.closest('[data-copy]'), d = e.target.closest('[data-del]');
+	if (c) copy(c.dataset.copy);
+	if (d && confirm(`${d.dataset.del} 키를 삭제할까요? 이미 이 키로 켜진 요금제는 그대로 남습니다.`)) {
+		try { await rpc('admin_delete_code', { p_code: d.dataset.del }); toast('삭제했습니다'); loaders.codes(); } catch (er) { toast(er.message); }
+	}
+});
+$('cd-search').addEventListener('input', renderCodes);
+loaders.codes = async () => {
+	try { codes = await rpc('admin_list_codes', { p_limit: 500 }); renderCodes(); }
+	catch (e) { $('codes').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+};
+
+// ───────── 가입자 ─────────
+let users = [];
+loaders.users = async () => {
+	try { users = await rpc('admin_list_users', { p_search: $('us-search').value.trim() || null, p_limit: 200 }); renderUsers(); }
+	catch (e) { $('users').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+};
+$('us-go').addEventListener('click', loaders.users);
+$('us-search').addEventListener('keydown', (e) => { if (e.key === 'Enter') loaders.users(); });
+function renderUsers() {
+	$('users').innerHTML = users.length ? users.map((u, i) => `
+		<div class="item"><div class="top">
+			<span class="plan ${u.effective}">${PLAN_NAME[u.effective]}</span>
+			<b class="grow" style="word-break:break-all">${esc(u.email)}</b>
+		</div><div class="meta">
+			${u.effective !== 'free' ? (u.plan_until ? `${when(u.plan_until)}까지` : '기한 없음') + '<br>' : u.plan !== 'free' ? '요금제 기간 끝남<br>' : ''}
+			가입: ${when(u.created_at)}${u.last_seen ? `, 마지막 접속: ${when(u.last_seen)}` : ''}, 켜진 컴퓨터 ${u.active_devices}대
+		</div>
+		<div class="row">
+			<select data-plan="${i}" style="width:auto"><option value="pro">Pro</option><option value="max">Max</option><option value="free">Free</option></select>
+			<input data-days="${i}" type="number" min="1" placeholder="일 수 (비우면 기한 없음)" style="width:200px">
+			<button class="btn small primary" data-set="${i}">요금제 바꾸기</button>
+			<button class="btn small" data-reset="${i}">기기 초기화</button>
+		</div></div>`).join('') : '<p class="hint">가입자가 없습니다.</p>';
+}
+$('users').addEventListener('click', async (e) => {
+	const s = e.target.closest('[data-set]'), r = e.target.closest('[data-reset]');
+	if (s) {
+		const i = +s.dataset.set, u = users[i];
+		const plan = document.querySelector(`[data-plan="${i}"]`).value;
+		const days = Number(document.querySelector(`[data-days="${i}"]`).value) || null;
+		if (!confirm(`${u.email} 의 요금제를 ${PLAN_NAME[plan]}${plan !== 'free' ? (days ? ` ${daysLabel(days)}` : ' (기한 없음)') : ''}로 바꿀까요?`)) return;
+		try { await rpc('admin_set_plan', { p_email: u.email, p_plan: plan, p_days: days }); toast('바꿨습니다'); loaders.users(); } catch (er) { toast(er.message); }
+	}
+	if (r) {
+		const u = users[+r.dataset.reset];
+		if (!confirm(`${u.email} 의 기기 기록을 지울까요? 동시 사용 제한에 걸려서 못 쓸 때 씁니다.`)) return;
+		try { await rpc('admin_reset_devices', { p_email: u.email }); toast('지웠습니다'); loaders.users(); } catch (er) { toast(er.message); }
+	}
+});
+
+// ───────── 피드백 ─────────
+let feedback = [];
+const fbFilter = chips('fb-filter', () => renderFeedback());
+const KIND = { bug: '오류 신고', idea: '기능 제안', other: '기타' };
+loaders.feedback = async () => {
+	try { feedback = await rpc('admin_list_feedback', { p_limit: 300 }); renderFeedback(); }
+	catch (e) { $('feedback').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+};
+function renderFeedback() {
+	const list = feedback.filter((f) => fbFilter() === 'all' || !f.resolved);
+	const open = feedback.filter((f) => !f.resolved).length;
+	$('fb-badge').hidden = !open; $('fb-badge').textContent = open;
+	$('feedback').innerHTML = list.length ? list.map((f) => `
+		<div class="item ${f.resolved ? 'used' : ''}"><div class="top">
+			<span class="kind ${esc(f.kind)}">${KIND[f.kind] || '기타'}</span>
+			<span class="grow meta" style="margin:0">${esc(f.email)}, ${when(f.created_at)}</span>
+		</div>
+		<div style="margin-top:8px;white-space:pre-wrap;line-height:1.6">${esc(f.message)}</div>
+		<div class="meta">버전 ${esc(f.app_version || '-')}, ${PLAN_NAME[f.plan] || '-'} 요금제</div>
+		<div class="row">
+			${f.log ? `<button class="btn small" data-log="${f.id}">기록 보기</button>` : ''}
+			<button class="btn small ${f.resolved ? '' : 'primary'}" data-res="${f.id}" data-v="${f.resolved ? 0 : 1}">${f.resolved ? '안 본 것으로' : '확인함'}</button>
+		</div>
+		<pre data-logbox="${f.id}" hidden>${esc(f.log || '')}</pre></div>`).join('') : '<p class="hint">피드백이 없습니다.</p>';
+}
+$('feedback').addEventListener('click', async (e) => {
+	const l = e.target.closest('[data-log]'), r = e.target.closest('[data-res]');
+	if (l) { const b = document.querySelector(`[data-logbox="${l.dataset.log}"]`); b.hidden = !b.hidden; }
+	if (r) {
+		try { await rpc('admin_resolve_feedback', { p_id: +r.dataset.res, p_resolved: r.dataset.v === '1' }); const f = feedback.find((x) => x.id === +r.dataset.res); if (f) f.resolved = r.dataset.v === '1'; renderFeedback(); }
+		catch (er) { toast(er.message); }
+	}
+});
+
+// ───────── 업데이트 ─────────
+const rlMode = chips('rl-mode', (v) => { $('rl-file-wrap').hidden = v !== 'asar'; $('rl-url-wrap').hidden = v === 'asar'; });
+let releases = [];
+loaders.releases = async () => {
+	try { releases = await rpc('admin_list_releases'); renderReleases(); }
+	catch (e) { $('releases').innerHTML = `<p class="msg err">${esc(e.message)}</p>`; }
+};
+function renderReleases() {
+	$('releases').innerHTML = releases.length ? releases.map((r, i) => `
+		<div class="item"><div class="top">
+			<b class="grow">${esc(r.version)}</b>
+			<span class="plan ${r.channel === 'early' ? 'max' : 'pro'}">${r.channel === 'early' ? 'Max 먼저' : '모두'}</span>
+		</div>
+		<div class="meta">${r.kind === 'asar' ? '프로그램 파일' : '다운로드 링크'}${r.size ? `, ${(r.size / 1048576).toFixed(1)}MB` : ''}, ${when(r.published_at)}${r.notes ? `<br>${esc(r.notes)}` : ''}</div>
+		<div class="row">
+			${r.channel === 'early' ? `<button class="btn small primary" data-pub="${i}">모두에게 공개</button>` : ''}
+			<button class="btn small danger" data-rdel="${i}">삭제</button>
+		</div></div>`).join('') : '<p class="hint">올린 버전이 없습니다.</p>';
+}
+$('releases').addEventListener('click', async (e) => {
+	const p = e.target.closest('[data-pub]'), d = e.target.closest('[data-rdel]');
+	try {
+		if (p) {
+			const r = releases[+p.dataset.pub];
+			await rpc('admin_publish_release', { p_version: r.version, p_channel: 'stable', p_url: r.download_url, p_notes: r.notes, p_kind: r.kind, p_sha256: r.sha256, p_size: r.size });
+			toast('모두에게 공개했습니다'); loaders.releases();
+		}
+		if (d) {
+			const r = releases[+d.dataset.rdel];
+			if (!confirm(`${r.version} 버전을 삭제할까요? 사용자에게 업데이트 알림이 더 이상 가지 않습니다.`)) return;
+			await rpc('admin_delete_release', { p_version: r.version }); toast('삭제했습니다'); loaders.releases();
+		}
+	} catch (er) { toast(er.message); }
+});
+
+async function sha256Hex(buf) {
+	const h = await crypto.subtle.digest('SHA-256', buf);
+	return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function uploadWithProgress(url, file, tokenStr, onProgress) {
+	return new Promise((resolve, reject) => {
+		const x = new XMLHttpRequest();
+		x.open('POST', url);
+		x.setRequestHeader('apikey', SB_KEY);
+		x.setRequestHeader('Authorization', 'Bearer ' + tokenStr);
+		x.setRequestHeader('x-upsert', 'true');
+		x.setRequestHeader('Content-Type', 'application/octet-stream');
+		x.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+		x.onload = () => (x.status >= 200 && x.status < 300 ? resolve() : reject(new Error(`파일을 올리지 못했습니다. (HTTP ${x.status} ${x.responseText.slice(0, 120)})`)));
+		x.onerror = () => reject(new Error('파일을 올리지 못했습니다. 인터넷 연결을 확인해 주세요.'));
+		x.timeout = 180000;
+		x.ontimeout = () => reject(new Error('파일을 올리는 데 시간이 너무 오래 걸립니다. 다시 시도해 주세요.'));
+		x.send(file);
+	});
+}
+$('rl-go').addEventListener('click', async () => {
+	const version = $('rl-version').value.trim();
+	if (!/^\d+(\.\d+){1,3}$/.test(version)) { msg('rl-msg', '버전은 2.1.0 처럼 숫자와 점으로 써 주세요.'); return; }
+	const channel = $('rl-channel').value, notes = $('rl-notes').value.trim() || null;
+	$('rl-go').disabled = true;
+	try {
+		if (rlMode() === 'asar') {
+			const file = $('rl-file').files[0];
+			if (!file) throw new Error('app.asar 파일을 골라 주세요.');
+			if (file.size > 50 * 1048576) throw new Error('50MB가 넘는 파일은 올릴 수 없습니다. app.asar 파일이 맞는지 확인해 주세요.');
+			msg('rl-msg', '파일을 확인하고 있습니다.', true);
+			const sha = await sha256Hex(await file.arrayBuffer());
+			const path = `${version}/app.asar`;
+			$('rl-prog').hidden = false;
+			await uploadWithProgress(`${SB_URL}/storage/v1/object/releases/${path}`, file, await token(), (p) => { $('rl-prog').firstElementChild.style.width = (p * 100) + '%'; });
+			await rpc('admin_publish_release', {
+				p_version: version, p_channel: channel, p_url: `${SB_URL}/storage/v1/object/public/releases/${path}`,
+				p_notes: notes, p_kind: 'asar', p_sha256: sha, p_size: file.size,
+			});
+		} else {
+			const url = $('rl-url').value.trim();
+			if (!/^https:\/\//.test(url)) throw new Error('다운로드 링크는 https 로 시작해야 합니다.');
+			await rpc('admin_publish_release', { p_version: version, p_channel: channel, p_url: url, p_notes: notes, p_kind: 'link' });
+		}
+		msg('rl-msg', `${version} 버전을 올렸습니다. ${channel === 'early' ? 'Max 사용자' : '모든 사용자'}의 설정 창에 30분 안에 알림이 뜹니다.`, true);
+		$('rl-file').value = '';
+		loaders.releases();
+	} catch (e) { msg('rl-msg', e.message); }
+	$('rl-go').disabled = false;
+	setTimeout(() => { $('rl-prog').hidden = true; $('rl-prog').firstElementChild.style.width = '0'; }, 1500);
+});
+
+if (session) enter();
+</script>
+</body>
+</html>
